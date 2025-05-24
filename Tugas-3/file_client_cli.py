@@ -19,7 +19,7 @@ def send_command(command_str=""):
         data_received="" #empty string
         while True:
             #socket does not receive all data at once, data comes in part, need to be concatenated at the end of process
-            data = sock.recv(65536)
+            data = sock.recv(16)
             if data:
                 #data is not empty, concat with previous content
                 data_received += data.decode()
@@ -91,77 +91,12 @@ def remote_delete(filename=""):
         print(hasil['data'])
         return False
 
-# if __name__=='__main__':
-#     server_address=('172.16.16.101',8889)
-#     remote_list()
-#     # remote_get('donalbebek.jpg')
-#     # remote_upload('input.file')
-#     remote_upload('pdftest123.pdf')
-#     # remote_upload('pokijan.jpg')
-#     # remote_list()
-#     # remote_delete('pokijan.jpg')
-#     # remote_list()
-
 if __name__=='__main__':
-    import concurrent.futures
-    import time
-
     server_address=('172.16.16.101',8889)
-
-    NUM_WORKERS = 50  # Number of concurrent workers
-    DOWNLOAD_FILE = 'output.file'
-    UPLOAD_FILE = 'input.file'
-
-    upload_size = os.path.getsize(UPLOAD_FILE) if os.path.exists(UPLOAD_FILE) else 0
-
-    def worker(worker_id):
-        try:
-            # Download
-            download_success = remote_get(DOWNLOAD_FILE)
-            download_size = os.path.getsize(DOWNLOAD_FILE) if download_success and os.path.exists(DOWNLOAD_FILE) else 0
-            # Upload
-            upload_success = remote_upload(UPLOAD_FILE)
-            # Worker is successful only if both succeed
-            all_success = download_success and upload_success
-            total_bytes = download_size + (upload_size if upload_success else 0)
-            return {
-                'worker_id': worker_id,
-                'success': all_success,
-                'bytes': total_bytes
-            }
-        except Exception as e:
-            return {
-                'worker_id': worker_id,
-                'success': False,
-                'bytes': 0,
-                'error': str(e)
-            }
-
-    start_all = time.perf_counter()
-    worker_success = 0
-    worker_fail = 0
-    total_bytes = 0
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_WORKERS) as executor:
-        futures = [executor.submit(worker, i+1) for i in range(NUM_WORKERS)]
-        for future in concurrent.futures.as_completed(futures):
-            res = future.result()
-            if res['success']:
-                worker_success += 1
-                total_bytes += res['bytes']
-            else:
-                worker_fail += 1
-                if 'error' in res:
-                    print(f"Worker {res['worker_id']} failed with error: {res['error']}")
-
-    end_all = time.perf_counter()
-    total_time = end_all - start_all
-    throughput = total_bytes / total_time if total_time > 0 else 0
-
-    print(f"\nStress Test Summary:")
-    print(f"Total workers: {NUM_WORKERS}")
-    print(f"Workers succeeded: {worker_success}")
-    print(f"Workers failed: {worker_fail}")
-    print(f"Total bytes transferred: {total_bytes} bytes")
-    print(f"Total time: {total_time:.4f} seconds")
-    print(f"Throughput: {throughput:.2f} bytes/sec")
+    remote_get('donalbebek.jpg')
+    remote_upload('donalbebek2.jpg')
+    remote_upload('pdftest123.pdf')
+    remote_upload('pokijan.jpg')
+    remote_list()
+    remote_delete('pokijan.jpg')
+    remote_list()
