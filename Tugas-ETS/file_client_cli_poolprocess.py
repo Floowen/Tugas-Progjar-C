@@ -102,6 +102,30 @@ def remote_delete(filename=""):
 #     # remote_delete('pokijan.jpg')
 #     # remote_list()
 
+def worker(worker_id, server_address, download_file, upload_file, upload_size):
+    import os
+    try:
+        # Download
+        download_success = remote_get(download_file)
+        download_size = os.path.getsize(download_file) if download_success and os.path.exists(download_file) else 0
+        # Upload
+        upload_success = remote_upload(upload_file)
+        # Worker is successful only if both succeed
+        all_success = download_success and upload_success
+        total_bytes = download_size + (upload_size if upload_success else 0)
+        return {
+            'worker_id': worker_id,
+            'success': all_success,
+            'bytes': total_bytes
+        }
+    except Exception as e:
+        return {
+            'worker_id': worker_id,
+            'success': False,
+            'bytes': 0,
+            'error': str(e)
+        }
+
 if __name__=='__main__':
     import concurrent.futures
     import time
@@ -109,41 +133,21 @@ if __name__=='__main__':
     server_address=('172.16.16.101',8889)
 
     NUM_WORKERS = 50  # Number of concurrent workers
-    DOWNLOAD_FILE = 'output.file'
-    UPLOAD_FILE = 'input.file'
+    DOWNLOAD_FILE = '10mb_file'
+    UPLOAD_FILE = '10mb_file'
 
     upload_size = os.path.getsize(UPLOAD_FILE) if os.path.exists(UPLOAD_FILE) else 0
-
-    def worker(worker_id):
-        try:
-            # Download
-            download_success = remote_get(DOWNLOAD_FILE)
-            download_size = os.path.getsize(DOWNLOAD_FILE) if download_success and os.path.exists(DOWNLOAD_FILE) else 0
-            # Upload
-            upload_success = remote_upload(UPLOAD_FILE)
-            # Worker is successful only if both succeed
-            all_success = download_success and upload_success
-            total_bytes = download_size + (upload_size if upload_success else 0)
-            return {
-                'worker_id': worker_id,
-                'success': all_success,
-                'bytes': total_bytes
-            }
-        except Exception as e:
-            return {
-                'worker_id': worker_id,
-                'success': False,
-                'bytes': 0,
-                'error': str(e)
-            }
 
     start_all = time.perf_counter()
     worker_success = 0
     worker_fail = 0
     total_bytes = 0
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_WORKERS) as executor:
-        futures = [executor.submit(worker, i+1) for i in range(NUM_WORKERS)]
+    with concurrent.futures.ProcessPoolExecutor(max_workers=NUM_WORKERS) as executor:
+        futures = [
+            executor.submit(worker, i+1, server_address, DOWNLOAD_FILE, UPLOAD_FILE, upload_size)
+            for i in range(NUM_WORKERS)
+        ]
         for future in concurrent.futures.as_completed(futures):
             res = future.result()
             if res['success']:
