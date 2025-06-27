@@ -91,17 +91,6 @@ def remote_delete(filename=""):
         print(hasil['data'])
         return False
 
-# if __name__=='__main__':
-#     server_address=('172.16.16.101',8889)
-#     remote_list()
-#     # remote_get('donalbebek.jpg')
-#     # remote_upload('input.file')
-#     remote_upload('pdftest123.pdf')
-#     # remote_upload('pokijan.jpg')
-#     # remote_list()
-#     # remote_delete('pokijan.jpg')
-#     # remote_list()
-
 def worker(worker_id, server_address, download_file, upload_file, upload_size):
     import os
     try:
